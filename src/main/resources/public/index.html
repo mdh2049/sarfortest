@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="css/index_a.css" />
+  <script src="js/jquery.min.js" defer></script>
+  <script src="js/bootstrap.min.js" defer></script>
+
+  <script src="js/const.js" defer></script>
+  <script src="js/utils.js" defer></script>
+  <script src="js/custom.js" defer></script>
+  <script src="js/menu.js" defer></script>
+
+  <script src="js/index2.js" defer></script>
+
+    <script type="text/javascript">
+      document.addEventListener("DOMContentLoaded", () => {
+        menuObj = new Menu();
+        menuObj.menuDtos = [{"menuId":"acaf484edd10","menuNm":"탑메뉴1","menuCn":null,"ordrVl":0,"upMenuId":"-","prjId":"e18ac518df06","scrnId":"ddfca83c088a","wrtrId":"","wrtDt":null,"mdfrId":"","mdfcnDt":null},{"menuId":"d7983df8db89","menuNm":"구매상품 목록","menuCn":null,"ordrVl":0,"upMenuId":"cea528cd0b2a","prjId":"e18ac518df06","scrnId":"f94b8a9b7919","wrtrId":"","wrtDt":null,"mdfrId":"","mdfcnDt":null},{"menuId":"e79030c320b5","menuNm":"구매상품 등록","menuCn":null,"ordrVl":0,"upMenuId":"acaf484edd10","prjId":"e18ac518df06","scrnId":"ddfca83c088a","wrtrId":"","wrtDt":null,"mdfrId":"","mdfcnDt":null},{"menuId":"cea528cd0b2a","menuNm":"탑메뉴2","menuCn":null,"ordrVl":1,"upMenuId":"-","prjId":"e18ac518df06","scrnId":"f94b8a9b7919","wrtrId":"","wrtDt":null,"mdfrId":"","mdfcnDt":null}] ?? [];
+
+        customObj = new Custom();
+        customObj.scrnDtos = [{"scrnId":"a4bc85889c8d","scrnNm":"구매상품 수정","scrnCn":null,"scrnType":"U","upScrnId":"f4f8bd118871","prjId":"e18ac518df06","dtaStrgId":"fbe62f2dd314","ordrVl":2,"wrtrId":"admin","wrtDt":null,"mdfrId":null,"mdfcnDt":null},{"scrnId":"d0fd8cff6907","scrnNm":"구매상품 조회","scrnCn":null,"scrnType":"R","upScrnId":"f4f8bd118871","prjId":"e18ac518df06","dtaStrgId":"fbe62f2dd314","ordrVl":1,"wrtrId":"admin","wrtDt":null,"mdfrId":null,"mdfcnDt":null},{"scrnId":"ddfca83c088a","scrnNm":"구매상품 등록","scrnCn":null,"scrnType":"C","upScrnId":"f4f8bd118871","prjId":"e18ac518df06","dtaStrgId":"fbe62f2dd314","ordrVl":0,"wrtrId":"admin","wrtDt":null,"mdfrId":null,"mdfcnDt":null},{"scrnId":"f4f8bd118871","scrnNm":"구매상품 관리","scrnCn":null,"scrnType":"None","upScrnId":"-","prjId":"e18ac518df06","dtaStrgId":"fbe62f2dd314","ordrVl":0,"wrtrId":"admin","wrtDt":null,"mdfrId":null,"mdfcnDt":null},{"scrnId":"f94b8a9b7919","scrnNm":"구매상품 목록","scrnCn":null,"scrnType":"L","upScrnId":"f4f8bd118871","prjId":"e18ac518df06","dtaStrgId":"fbe62f2dd314","ordrVl":3,"wrtrId":"admin","wrtDt":null,"mdfrId":null,"mdfcnDt":null}] ?? [];
+
+        menuObj.createGnbMenu(document.getElementById('gnb-menu'));
+        menuObj.createResponsiveMenu();
+        
+      });
+    </script>
+  </head>
+<body>
+  <div id="wrap10">
+    <div id="header10">
+      <div class="headerWrap10">
+        <!-- gnb -->
+        <div class="topGnb_wrap10">
+          <div class="topGnb10">
+            <h1>
+              <a href="" id="main-logo">
+                <img src="images/sa_robot2.png" alt="메인로고" class="mainlogo_i_1">
+                <img src="images/sa_robot.png" alt="메인로고" class="mainlogo_i_2">
+              </a>
+            </h1>
+            <nav id="gnb10">
+              <div id="gnbwrap10">
+                <div id="gnb-menu">
+                </div>
+              </div>
+            </nav>
+          </div>
+        </div>
+      </div>
+      <!-- responsive menu -->
+      <a href="#none" class="gnb-btn10"><img src="images/gnb-btn.png" alt="전체메뉴"></a>
+      <a href="#none" class="gnb-btn11"><img src="images/gnb-btn2.png" alt="전체메뉴"></a>
+      <div class="gnb-bg10"></div>
+    </div>
+    <div class="menubar10">
+      <div class="lnb10">
+        <p class="gnb-close-btn10"><a href="javascript:void(0);"><img src="images/gnb-close-btn.gif" alt="메뉴닫기"></a></p>
+        <div class="lnb-list10">
+          <nav>
+            <ul id="responsive-menu">
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+    <!-- banner -->
+    <div id="banner10">
+    </div>
+    <!-- container -->
+    <div id="container10">
+      <!-- contents -->
+      <div id="content10" style="height: 880px;width: 1115px;">
+        <div class="content10">
+          <div class="con_n10">
+            <div class="contentinner10">
+              <div class="main_titl10">
+                <div class="main_left_txt">
+                  <h2>PROJECT</h2>
+                  <div class="left_txt_inner">
+                    <p class="left_txt_1"></p>
+                    <p class="left_txt_2">Smart AI Robot</p>
+                  </div>
+                </div>
+                <div class="main_right"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- contents end -->
+      </div>
+      <!-- container end -->
+    </div>
+    <!-- header10 end -->
+    <footer class="footer_10">
+      <div class="footerTxt10">
+        <div style="float: left">
+          <p>ⓒ2024 by 프로젝트 Proudly created by sootechsys.co.kr</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+  <!-- wrap10 end -->
+</body>
+
+</html>

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+  <!--@see https://eblo.tistory.com/60-->
+  <!-- TODO dev, prod의 파일 경로 수정해야 함 -->
+
+  <!-- 30초마다 설정 파일의 변경을 확인한다. 파일이 변경되면 다시 로딩한다 -->
+  <configuration scan="true" scanPeriod="30 seconds">
+      <!-- console log -->
+      <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+          <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+              <pattern>%-5level %d{yy-MM-dd HH:mm:ss} %logger[%method:%line] - %msg%n</pattern>
+          </encoder>
+      </appender>
+
+
+      <springProfile name="local">
+          <appender name="FILE-LOCAL" class="ch.qos.logback.core.rolling.RollingFileAppender">
+              <file>c:\\temp\\logs\\sar-api.${HOSTNAME}.log</file>  <!-- TODO -->
+              <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                  <fileNamePattern>c:\\temp\\logs\\sar-api.%d{yyyy-MM-dd}.${HOSTNAME}.log <!-- TODO -->
+                  </fileNamePattern>
+              </rollingPolicy>
+              <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                  <pattern>%-5level %d{yy-MM-dd HH:mm:ss} %logger[%method:%line] - %msg%n</pattern>
+              </encoder>
+          </appender>
+
+
+          <root level="DEBUG">
+              <appender-ref ref="CONSOLE"/>
+              <appender-ref ref="FILE-LOCAL"/>
+          </root>
+      </springProfile>
+
+      <springProfile name="ncp">
+          <appender name="FILE-DEV"
+                    class="ch.qos.logback.core.rolling.RollingFileAppender">
+              <file>/app/logs/sar-api.${HOSTNAME}.log</file>  <!-- TODO -->
+              <!--            <file>/home/ec2-user/sdt-api.${HOSTNAME}.log</file>-->
+              <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                  <fileNamePattern>/app/logs/sar-api.%d{yyyy-MM-dd}.${HOSTNAME}.log <!-- TODO -->
+                  </fileNamePattern>
+              </rollingPolicy>
+              <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                  <pattern>%-5level %d{yy-MM-dd HH:mm:ss} %logger[%method:%line] - %msg%n</pattern>
+              </encoder>
+          </appender>
+
+
+          <root level="DEBUG">
+              <appender-ref ref="CONSOLE"/>
+              <appender-ref ref="FILE-DEV"/>
+          </root>
+      </springProfile>
+
+      <springProfile name="prod">
+          <appender name="FILE-PROD"
+                    class="ch.qos.logback.core.rolling.RollingFileAppender">
+              <file>/app/log/sar-api.${HOSTNAME}.log</file> <!-- TODO -->
+              <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                  <fileNamePattern>/app/log/sar-api.%d{yyyy-MM-dd}.${HOSTNAME}.log  <!-- TODO -->
+                  </fileNamePattern>
+              </rollingPolicy>
+              <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+                  <pattern>%-5level %d{yy-MM-dd HH:mm:ss} %logger[%method:%line] - %msg%n</pattern>
+              </encoder>
+          </appender>
+          <root level="INFO">
+              <appender-ref ref="CONSOLE"/>
+              <appender-ref ref="FILE-PROD"/>
+          </root>
+      </springProfile>
+  </configuration>

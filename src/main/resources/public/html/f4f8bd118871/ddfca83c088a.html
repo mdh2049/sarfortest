@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="sootechsystems CO.LTD" />
+    <meta name="generator" content="SAR 0.1" />
+
+    <base href="http://localhost:18080/sar-app/" />
+    
+    <title>TODO</title>
+
+    <link rel="stylesheet" href="css/index_a.css" />
+    <script src="js/jquery.min.js" defer></script>
+    <script src="js/bootstrap.min.js" defer></script>
+
+    <script src="js/const.js" defer></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/custom.js" defer></script>
+    <script src="js/menu.js" defer></script>
+    <script src="js/serviceMenu.js" defer></script>
+    <script src="js/pager.js" defer></script>
+    <script src="js/index2.js" defer></script>
+    <script type="text/javascript">
+        const cmmnCodeMap = {} ?? {};
+
+
+const searchParams = new URLSearchParams(window.location.href);
+const pkValue = searchParams.has('pkValue') ? searchParams.get('pkValue') : '';
+
+
+
+let customObj = undefined;
+let menuObj = undefined;
+
+document.addEventListener('DOMContentLoaded', () => {
+  customObj = new Custom();
+  menuObj = new Menu();
+
+  menuObj.createGnbMenu(document.getElementById('gnb-menu'));
+  menuObj.createResponsiveMenu();
+  menuObj.createLnbMenu();
+  customObj.scrnDtos = [{"scrnId":"a4bc85889c8d","scrnNm":"구매상품 수정","scrnCn":null,"scrnType":"U","upScrnId":"f4f8bd118871","prjId":"e18ac518df06","dtaStrgId":"fbe62f2dd314","ordrVl":2,"wrtrId":"admin","wrtDt":null,"mdfrId":null,"mdfcnDt":null},{"scrnId":"d0fd8cff6907","scrnNm":"구매상품 조회","scrnCn":null,"scrnType":"R","upScrnId":"f4f8bd118871","prjId":"e18ac518df06","dtaStrgId":"fbe62f2dd314","ordrVl":1,"wrtrId":"admin","wrtDt":null,"mdfrId":null,"mdfcnDt":null},{"scrnId":"ddfca83c088a","scrnNm":"구매상품 등록","scrnCn":null,"scrnType":"C","upScrnId":"f4f8bd118871","prjId":"e18ac518df06","dtaStrgId":"fbe62f2dd314","ordrVl":0,"wrtrId":"admin","wrtDt":null,"mdfrId":null,"mdfcnDt":null},{"scrnId":"f4f8bd118871","scrnNm":"구매상품 관리","scrnCn":null,"scrnType":"None","upScrnId":"-","prjId":"e18ac518df06","dtaStrgId":"fbe62f2dd314","ordrVl":0,"wrtrId":"admin","wrtDt":null,"mdfrId":null,"mdfcnDt":null},{"scrnId":"f94b8a9b7919","scrnNm":"구매상품 목록","scrnCn":null,"scrnType":"L","upScrnId":"f4f8bd118871","prjId":"e18ac518df06","dtaStrgId":"fbe62f2dd314","ordrVl":3,"wrtrId":"admin","wrtDt":null,"mdfrId":null,"mdfcnDt":null}] ?? [];
+  customObj.currentScrnDto = {"scrnId":"ddfca83c088a","scrnNm":"구매상품 등록","scrnCn":null,"scrnType":"C","upScrnId":"f4f8bd118871","prjId":"e18ac518df06","dtaStrgId":"fbe62f2dd314","ordrVl":0,"wrtrId":"admin","wrtDt":null,"mdfrId":null,"mdfcnDt":null};
+  customObj.requestPath = '/tb-e18ac518df06-fbe62f2dd314';
+});
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('button[data-button-action="C"]').forEach(el=>{
+    customObj.processCButton(el);
+  });
+
+  document.querySelectorAll('button[data-button-action="U"]').forEach(el=>{
+    customObj.processUButton(el, 'fbe62f2dd314', pkValue);
+  });
+
+  document.querySelectorAll('button[data-button-action="D"]').forEach(el=>{
+    customObj.processDButton(el, pkValue);
+  });
+
+  document.querySelectorAll('button[data-button-action="L"]').forEach(el=>{
+    customObj.processLButton(el, pkValue);
+  });
+
+  document.querySelectorAll('button[data-button-action="None"]').forEach(el=>{
+    customObj.processNoneButton(el, pkValue);
+  });
+});
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  /** select에 코드 바인드 */
+  document.querySelectorAll('select[data-parent-cmmn-code-id]').forEach(el=>{
+    const parentCmmnCodeId = el.getAttribute('data-parent-cmmn-code-id');
+    customObj.bindCodesOfSelect(el, cmmnCodeMap[parentCmmnCodeId]);
+  });
+
+  /** checkbox에 코드 바인드 */
+  document.querySelectorAll('input[type="checkbox"][data-parent-cmmn-code-id]').forEach(el=>{
+    const parentCmmnCodeId = el.getAttribute('data-parent-cmmn-code-id');
+    customObj.bindCodesOfInputCheckbox(el, cmmnCodeMap[parentCmmnCodeId]);
+  });
+
+  /** radio에 코드 바인드 */
+  document.querySelectorAll('input[type="radio"][data-parent-cmmn-code-id]').forEach(el=>{
+    const parentCmmnCodeId = el.getAttribute('data-parent-cmmn-code-id');
+    customObj.bindCodesOfInputRadio(el, cmmnCodeMap[parentCmmnCodeId]);
+  });
+
+  /** file 엘리먼트 처리 */
+  document.querySelectorAll('input[type="file"]').forEach(el =>{
+      customObj.processFileInput(el, document.querySelector('.contentinner3 > form').dataset.type);
+  })
+});
+
+
+document.addEventListener('DOMContentLoaded', () => {
+});
+
+    </script>
+</head>
+
+<body>
+    <div id="wrap10">
+        <div id="header10">
+            <div class="headerWrap10">
+                <!-- gnb -->
+                <div class="topGnb_wrap10">
+                    <div class="topGnb10">
+                        <h1>
+                            <a href="" id="main-logo">
+                                <img src="images/sa_robot2.png" alt="메인로고" class="mainlogo_i_1">
+                                <img src="images/sa_robot.png" alt="메인로고" class="mainlogo_i_2">
+                            </a>
+                        </h1>
+                        <nav id="gnb10">
+                            <div id="gnbwrap10">
+                                <div id="gnb-menu">
+                                </div>
+                            </div>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+            <!-- responsive menu -->
+            <a href="#none" class="gnb-btn10"><img src="images/gnb-btn.png" alt="전체메뉴"></a>
+            <a href="#none" class="gnb-btn11"><img src="images/gnb-btn2.png" alt="전체메뉴"></a>
+            <div class="gnb-bg10"></div>
+        </div>
+        <div class="menubar10">
+            <div class="lnb10">
+                <p class="gnb-close-btn10"><a href="javascript:void(0);"><img src="images/gnb-close-btn.gif"
+                            alt="메뉴닫기"></a></p>
+                <div class="lnb-list10">
+                    <nav>
+                        <ul id="responsive-menu">
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+        <!-- container -->
+        <div id="container10" style="display: flex;padding-top: 25px;">
+            <!-- lnb -->
+            <div id="left10">
+                <div class="lnb1010">
+                    <h3 class="member10" id="lnb-menu">
+                        <img class="member_i1" src="images/snb_6.png" alt="좌측대제목이미지">
+                        <img class="member_i2" src="images/snb_3.png" alt="좌측대제목이미지">
+                    </h3>
+                    <div class="lnb-list1010">
+                        <ul>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <!-- contents -->
+            <div id="content10">
+                <div class="content10">
+                    <div class="con_n10">
+                        <div class="contentinner10">
+                            <form id="form" data-type="C">
+<div class="wrapper-b8bd249372d6" data-x="20" data-y="20" style="transform:translate(20px, 20px); position:absolute; ">
+  <h3 class=" sub-tit10" style="width:1000px; height:50px; ">구매상품 등록</h3>
+</div>
+<div class="wrapper-fcd35e5a5cd0" data-x="20" data-y="100" style="transform:translate(20px, 100px); position:absolute; ">
+  <span class=" content10_inner" style="width:140px; height:30px; ">사용자</span>
+</div>
+<div class="wrapper-e3f3f2fe5d43" data-x="170" data-y="100" style="transform:translate(170px, 100px); position:absolute; ">
+  <input type="text" class="form-control input_10_i" data-data-storage-column-id="ec9013607471" style="width:850px; height:30px; "></input>
+</div>
+<div class="wrapper-c7f44a3f50ed" data-x="20" data-y="150" style="transform:translate(20px, 150px); position:absolute; ">
+  <span class=" content10_inner" style="width:140px; height:30px; ">상품</span>
+</div>
+<div class="wrapper-e2a0760eba96" data-x="170" data-y="150" style="transform:translate(170px, 150px); position:absolute; ">
+  <input type="text" class="form-control input_10_i" data-data-storage-column-id="a9cbd6338b24" style="width:850px; height:30px; "></input>
+</div>
+<div class="wrapper-d501272c65eb" data-x="20" data-y="200" style="transform:translate(20px, 200px); position:absolute; ">
+  <span class=" content10_inner" style="width:140px; height:30px; ">구매일</span>
+</div>
+<div class="wrapper-e4a3f1bb9c7b" data-x="170" data-y="200" style="transform:translate(170px, 200px); position:absolute; ">
+  <input type="text" class="form-control input_10_i" data-data-storage-column-id="f49d7f97577a" style="width:850px; height:30px; "></input>
+</div>
+<div class="wrapper-fe35fb33fd27" data-x="20" data-y="250" style="transform:translate(20px, 250px); position:absolute; ">
+  <span class=" content10_inner" style="width:140px; height:30px; ">가격</span>
+</div>
+<div class="wrapper-e5af7912951a" data-x="170" data-y="250" style="transform:translate(170px, 250px); position:absolute; ">
+  <input type="text" class="form-control input_10_i" data-data-storage-column-id="a9480a0be018" style="width:850px; height:30px; "></input>
+</div>
+<div class="wrapper-b5e8d20dbbb1" data-x="815" data-y="450" style="position:absolute; transform:translate(815px, 450px); ">
+  <button type="button" class="btn btn1010" data-next-scren-id="d0fd8cff6907" data-button-action="C" style="width:104px; height:40px; ">등록</button>
+</div>
+<div class="wrapper-c09b80ff42d5" data-x="925" data-y="450" style="position:absolute; transform:translate(925px, 450px); ">
+  <button type="button" class="btn btn1010" data-next-scren-id="f94b8a9b7919" data-button-action="None" style="width:104px; height:40px; ">취소</button>
+</div>
+
+</form>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- contents end -->
+        </div>
+        <!-- container end -->
+    </div>
+    <!-- header10 end -->
+    <footer class="footer_10">
+        <div class="footerTxt10">
+            <div style="float: left">
+                <p>ⓒ2024 by 프로젝트 Proudly created by sootechsys.co.kr</p>
+            </div>
+        </div>
+    </footer>
+    </div>
+    <!-- wrap10 end -->
+</body>
+
+</html>
