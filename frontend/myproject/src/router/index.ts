@@ -1,6 +1,7 @@
 import { useAuthorityStore } from '@/stores/authorityStore'
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import type { AxiosError } from 'axios';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -37,65 +38,84 @@ const router = createRouter({
 // 라우터 가드 설정
 router.beforeEach(async (to, from, next) => {
   const authorityStore = useAuthorityStore();
-  debugger;
+
   try {
+    // Pinia에 Access Token 확인
+    let accessToken = authorityStore.accessToken || sessionStorage.getItem('accessToken');
+    if (accessToken) {
+      // Pinia에 사용자 정보가 없는 경우 복원
+      if (!authorityStore.user) {
+        await fetchAndStoreUserInfo(accessToken);
+      }
+
+      // 라우팅 진행
+      next();
+      return;
+    }
+
     // URL에서 Authorization Code 추출
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
 
     if (!code) {
-      // Authorization Code가 없는 경우 로그인 페이지로 리다이렉트
-      const redirectUrl = encodeURIComponent(window.location.origin);
-      const loginUrl = `${import.meta.env.VITE_ADMIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
-      window.location.href = loginUrl;
+      // 인증 코드가 없는 경우 로그인 페이지로 리다이렉트
+      redirectToLogin();
       return;
     }
 
     // Access Token 요청
-    const tokenResponse = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code,
-        redirectUri: window.location.origin,
-      }),
-    });
+    accessToken = await requestAccessToken(code);
 
-    if (!tokenResponse.ok) throw new Error('Failed to fetch Access Token');
+    // Access Token 저장
+    if (accessToken) {
+      authorityStore.setAccessToken(accessToken);
+      //sessionStorage.setItem('accessToken', accessToken);
 
-    const { accessToken } = await tokenResponse.json();
-
-    // 사용자 정보 요청 (userSn으로 조회)
-    const userSn = await fetchUserSn(accessToken); // Access Token으로 userSn 가져오기
-
-    // userSn으로 사용자 정보 조회
-    const userResponse = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}users/${userSn}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!userResponse.ok) throw new Error('Failed to fetch user information');
-
-    const userDto = await userResponse.json();
-
-    // Pinia Store에 사용자 정보 저장
-    authorityStore.login(userDto);
-
+      // 사용자 정보 요청 및 저장
+      await fetchAndStoreUserInfo(accessToken);
+    } else {
+      throw new Error('Access Token is null');
+    }
+    // URL에서 'code' 제거
+    //removeCodeFromUrl();
     // 라우팅 진행
     next();
   } catch (error) {
     console.error('Authentication failed:', error);
 
-    // 로그인 페이지로 리다이렉트
-    const redirectUrl = encodeURIComponent(window.location.origin);
-    const loginUrl = `${import.meta.env.VITE_ADMIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
-    window.location.href = loginUrl;
+    if (isAxiosError(error) && error.response?.status === 401) {
+      try {
+        // Refresh Token으로 Access Token 갱신
+        const refreshToken = getRefreshTokenFromCookie();
+        const { accessToken: newAccessToken } = await fetchAccessToken(refreshToken);
+
+        authorityStore.setAccessToken(newAccessToken);
+        //sessionStorage.setItem('accessToken', newAccessToken);
+
+        // 사용자 정보 요청 및 저장
+        await fetchAndStoreUserInfo(newAccessToken);
+
+        // 라우팅 진행
+        next();
+        return;
+      } catch (refreshError) {
+        console.error('Failed to refresh Access Token:', refreshError);
+      }
+    }
+
+    // 최종적으로 로그인 페이지로 리다이렉트
+    redirectToLogin();
   }
 });
 
 
-// 사용자 정보 요청 (Authorization 헤더로 전달)
+
+// Axios 에러 타입 가드
+function isAxiosError(error: unknown): error is AxiosError {
+  return (error as AxiosError).isAxiosError !== undefined;
+}
+
+// userSn 요청
 const fetchUserSn = async (accessToken: string): Promise<string> => {
   try {
     // 사용자 정보 요청
@@ -125,6 +145,67 @@ const fetchUserSn = async (accessToken: string): Promise<string> => {
     throw error; // 에러를 다시 던져 상위에서 처리
   }
 };
+
+async function fetchAndStoreUserInfo(accessToken: string) {
+  const authorityStore = useAuthorityStore();
+  const userSn = await fetchUserSn(accessToken);
+
+  const userResponse = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}users/${userSn}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!userResponse.ok) throw new Error('Failed to fetch user information');
+
+  const userDto = await userResponse.json();
+  authorityStore.login(userDto, accessToken);
+}
+
+// Access Token 요청
+async function requestAccessToken(code: string): Promise<string> {
+  const tokenResponse = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      code,
+      redirectUri: window.location.origin,
+    }),
+  });
+
+  if (!tokenResponse.ok) throw new Error('Failed to fetch Access Token');
+
+  const { accessToken } = await tokenResponse.json();
+  return accessToken;
+}
+
+// Refresh Token으로 Access Token 갱신
+async function fetchAccessToken(refreshToken: string) {
+  const response = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/refresh-token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!response.ok) throw new Error('Failed to refresh Access Token');
+  return await response.json();
+}
+
+// Refresh Token 가져오기
+function getRefreshTokenFromCookie() {
+  const cookies = document.cookie.split(';');
+  const refreshToken = cookies.find((cookie) => cookie.trim().startsWith('refreshToken='));
+  if (!refreshToken) throw new Error('Refresh Token not found');
+  return refreshToken.split('=')[1];
+}
+
+// 로그인 페이지로 리다이렉트
+function redirectToLogin() {
+  const redirectUrl = encodeURIComponent(window.location.origin);
+  const loginUrl = `${import.meta.env.VITE_ADMIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
+  window.location.href = loginUrl;
+}
+
 
 
 export default router

@@ -7,18 +7,36 @@ import { useAuthorityStore } from '@/stores/authorityStore'
 
 
 const menuList = inject<Menu[]>('menuList')!
-  const logout = async () => {
+const logout = async () => {
   const authorityStore = useAuthorityStore();
-  authorityStore.logout();
-
-  // 쿠키에서 token 삭제
-  document.cookie = 'token=; Max-Age=0; Path=/';
-
-  alert('로그아웃 되었습니다.');
-  const redirectUrl = encodeURIComponent(window.location.origin);
-  const adminLoginUrl = `${import.meta.env.VITE_ADMIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
-  window.location.href = adminLoginUrl;
-};
+  try {
+    // 액세스 토큰 가져오기
+    const accessToken = authorityStore.accessToken;
+    if (!accessToken) {
+      throw new Error('Access Token is not available');
+    }
+    // 백엔드에서 세션 종료 요청
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/logout`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to log out from server');
+    }
+    // 클라이언트 상태 초기화
+    authorityStore.logout();
+    alert('로그아웃 되었습니다.');
+    const redirectUrl = encodeURIComponent(window.location.origin);
+    const adminLoginUrl = `${import.meta.env.VITE_ADMIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
+    window.location.href = adminLoginUrl;
+  } catch (error) {
+    console.error('Logout failed:', error);
+    alert('로그아웃 중 문제가 발생했습니다.');
+  }
+}
 
 </script>
 
