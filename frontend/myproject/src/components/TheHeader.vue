@@ -4,12 +4,11 @@ import HeaderMenuBlock from '@/components/menu/HeaderMenuBlock.vue'
 import { inject } from 'vue'
 import type { Menu } from '@/types/menu.ts'
 import { useAuthorityStore } from '@/stores/authorityStore'
-import { authService } from '@/services/AuthService'
+
 
 const menuList = inject<Menu[]>('menuList')!
   const logout = async () => {
   const authorityStore = useAuthorityStore();
-  await authService.logout();
   authorityStore.logout();
 
   // 쿠키에서 token 삭제

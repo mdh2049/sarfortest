@@ -1,4 +1,3 @@
-import { authService } from '@/services/AuthService'
 import { useAuthorityStore } from '@/stores/authorityStore'
 import type { DecodedToken } from '@/types/token/DecodedToken.dto'
 import type { TokenDto } from '@/types/token/Token.dto'
@@ -66,7 +65,6 @@ const isTokenExpired = (exp: number | null): boolean => {
 const handleTokenExpiration = (): void => {
   const authorityStore = useAuthorityStore()
   authorityStore.logout()
-  authService.logout()
   document.cookie = 'token=; Max-Age=0; Path=/';
   alert('로그인이 만료되었습니다. 다시 로그인해주세요.')
   // 관리자 서버 로그인 페이지로 리다이렉트

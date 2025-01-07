@@ -1,8 +1,6 @@
+import { useAuthorityStore } from '@/stores/authorityStore'
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import { useAuthorityStore } from '@/stores/authorityStore'
-import { JwtUtils } from '@/utils/JwtUtils'
-import { userService } from '@/services/UserService'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -35,34 +33,56 @@ const router = createRouter({
 
   ],
 })
-router.beforeEach(async (to, from, next) => {debugger
-  const authorityStore = useAuthorityStore()
-  // 쿠키에서 토큰 문자열 가져오기
-  const tokenString = document.cookie
-    .split('; ')
-    .find((row) => row.startsWith('token='))
-    ?.split('=')[1];
+router.beforeEach(async (to, from, next) => {
+  const authorityStore = useAuthorityStore();
 
-  // JSON.parse로 토큰 객체 변환
-  const token = tokenString ? JSON.parse(decodeURIComponent(tokenString)) : null;
-  const exp = JwtUtils.getExpFromToken(token)
+  try {debugger
+    // URL에서 Authorization Code 추출
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
 
-  if (!token || !token.token || JwtUtils.isTokenExpired(exp)) {
-    // 만료된 토큰 삭제
-    document.cookie = 'token=; Max-Age=0; Path=/';
-    // 관리자 서버 로그인 페이지로 리다이렉트
-    const redirectUrl = encodeURIComponent(window.location.origin + to.fullPath)
-    const adminLoginUrl = `${import.meta.env.VITE_ADMIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`
-    window.location.href = adminLoginUrl
-    return
-  }else{
-    debugger
-    authorityStore.login({},token)
-    const userSn = JwtUtils.getJwtUserInfoFromToken(token).userSn
-    const userAuthroity = await userService.getUserBySn(userSn)
-    authorityStore.login(userAuthroity,token)
-    next()
+    if (!code) {
+      // Authorization Code가 없는 경우 로그인 페이지로 리다이렉트
+      const redirectUrl = encodeURIComponent(window.location.origin + to.fullPath);
+      const loginUrl = `${import.meta.env.VITE_ADMIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
+      window.location.href = loginUrl;
+      return;
+    }
+
+    // Access Token 요청
+    const tokenResponse = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code,
+        redirectUri: window.location.origin + to.fullPath,
+      }),
+    });
+
+    if (!tokenResponse.ok) throw new Error('Failed to fetch Access Token');
+
+    const { accessToken } = await tokenResponse.json();
+
+    // 사용자 정보 요청 (Authorization 헤더로 전달)
+    const userAuthroity = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}users/me`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }).then((response) => {
+      if (!response.ok) throw new Error('Failed to fetch user information');
+      return response.json();
+    });
+
+    authorityStore.login(userAuthroity);
+    next();
+  } catch (error) {
+    console.error('Authentication failed:', error);
+    const redirectUrl = encodeURIComponent(window.location.origin + to.fullPath);
+    const loginUrl = `${import.meta.env.VITE_ADMIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
+    window.location.href = loginUrl;
   }
-})
+});
+
+
 
 export default router
