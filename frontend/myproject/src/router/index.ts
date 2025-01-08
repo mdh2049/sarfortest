@@ -2,6 +2,7 @@ import { useAuthorityStore } from '@/stores/authorityStore'
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 
+const baseURL = import.meta.env.VITE_ADMIN_BACKEND_URL
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -38,13 +39,13 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authorityStore = useAuthorityStore();
   try {
-    // 서버에 토큰 유효성 확인 요청 - 토큰이 유효하다면 userSn을 리턴
-    const authorizedUserSn = await checkAuthStatus();
+    // 서버에 토큰 유효성 확인 요청
+    const tokenResponseUserDto = await checkAuthStatus();
 
-    if (authorizedUserSn) {
+    if (tokenResponseUserDto) {
       // Pinia에 사용자 정보가 없는 경우 복원
       if (!authorityStore.user) {
-        await fetchAndStoreUserInfo(authorizedUserSn);
+        authorityStore.login(tokenResponseUserDto);
       }
 
       // 라우팅 진행
@@ -63,10 +64,8 @@ router.beforeEach(async (to, from, next) => {
     }
 
     // Authorization Code를 사용해 Access Token 요청 - 토큰 생성 후후 userSn을 리턴
-    const newUserSn = await requestAccessToken(code);
-
-    // 사용자 정보 요청 및 저장
-    await fetchAndStoreUserInfo(newUserSn);
+    const newTokenResponseUserDto = await requestAccessToken(code);
+    authorityStore.login(newTokenResponseUserDto);
 
     // 라우팅 진행
     next();
@@ -75,9 +74,9 @@ router.beforeEach(async (to, from, next) => {
 
     // Refresh Token으로 Access Token 갱신 시도
     try {
-      const renewUserSn = await refreshAccessToken();
+      const renewTokenResponseUserDto = await refreshAccessToken();
       if (!authorityStore.user) {
-        await fetchAndStoreUserInfo(renewUserSn);
+        authorityStore.login(renewTokenResponseUserDto);
       }
       // 라우팅 진행
       next();
@@ -90,7 +89,7 @@ router.beforeEach(async (to, from, next) => {
 // Authorization Code를 사용해 Access Token 요청
 const requestAccessToken = async (code: string) => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/token`, {
+    const response = await fetch(`${baseURL}auth/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -104,8 +103,8 @@ const requestAccessToken = async (code: string) => {
       throw new Error('Failed to fetch Access Token');
     }
 
-    const { userSn } = await response.json();
-    return userSn;
+    const tokenResponseUserDto = await response.json();
+    return tokenResponseUserDto;
   } catch (error) {
     console.error('Error requesting Access Token:', error);
     throw error;
@@ -115,7 +114,7 @@ const requestAccessToken = async (code: string) => {
 // Refresh Token으로 Access Token 갱신
 const refreshAccessToken = async () => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/refresh-token`, {
+    const response = await fetch(`${baseURL}auth/refresh-token`, {
       method: 'POST',
       credentials: 'include', // 쿠키 포함 요청
     });
@@ -124,8 +123,8 @@ const refreshAccessToken = async () => {
       throw new Error('Failed to refresh Access Token');
     }
 
-    const { userSn } = await response.json();
-    return userSn;
+    const tokenResponseUserDto = await response.json();
+    return tokenResponseUserDto;
   } catch (error) {
     console.error('Error refreshing Access Token:', error);
     throw error;
@@ -135,14 +134,14 @@ const refreshAccessToken = async () => {
 // 서버에서 인증 상태 확인
 const checkAuthStatus = async () => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/check`, {
+    const response = await fetch(`${baseURL}auth/check`, {
       method: 'GET',
       credentials: 'include', // 쿠키 포함 요청
     });
 
     if (response.ok) {
-      const { userSn } = await response.json();
-      return userSn;
+      const  tokenResponseUserDto  = await response.json();
+      return tokenResponseUserDto;
     }
 
     return false;
@@ -151,30 +150,6 @@ const checkAuthStatus = async () => {
     throw error;
   }
 };
-
-
-// 사용자 정보 요청 및 저장
-const fetchAndStoreUserInfo = async (userSn: string) => {
-  try {
-    const authorityStore = useAuthorityStore();
-    const userResponse = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}users/${userSn}`, {
-      method: 'GET',
-      credentials: 'include', // 쿠키 포함 요청
-    });
-
-    if (!userResponse.ok) {
-      throw new Error('Failed to fetch user information');
-    }
-
-    const userDto = await userResponse.json();
-    authorityStore.login(userDto);
-  } catch (error) {
-    console.error('Error fetching and storing user information:', error);
-    throw error;
-  }
-};
-
-
 
 // 로그인 페이지로 리다이렉트
 const redirectToLogin = () => {
@@ -187,7 +162,5 @@ const redirectToLogin = () => {
     throw error;
   }
 };
-
-
 
 export default router

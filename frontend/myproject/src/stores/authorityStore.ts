@@ -1,28 +1,29 @@
-import type { UserDto } from '@/types/User.dto';
+
+import type { TokenResponseUserDto } from '@/types/token.response.user.dto copy';
 import { defineStore } from 'pinia';
 
 export const useAuthorityStore = defineStore('auth', {
   state: () => ({
-    user: null as UserDto | null,
+    user: null as TokenResponseUserDto | null,
   }),
   getters: {
     isAuthenticated: (state) => !!state.user,
-    allAuthorities: (state) => state.user?.allAuthrtDtoSet ?? [],
+    allAuthorities: (state) => state.user?.authorities ?? [],
   },
   actions: {
     /**
      * 백엔드 로그인 성공 후 사용자 정보를 저장
      */
-    login(userDto: UserDto) {
-      this.user = userDto;
+    login(tokenResponseUserDto: TokenResponseUserDto) {
+      this.user = tokenResponseUserDto;
       // 로컬 스토리지에 사용자 정보 저장
       //localStorage.setItem('user', JSON.stringify(userDto));
     },
     /**
      * 사용자 정보를 갱신
      */
-    updateUser(newUserDto: UserDto) {
-      this.user = newUserDto;
+    updateUser(newTokenResponseUserDto: TokenResponseUserDto) {
+      this.user = newTokenResponseUserDto;
       //localStorage.setItem('user', JSON.stringify(newUserDto));
     },
     /**
