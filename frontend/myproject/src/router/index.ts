@@ -69,15 +69,12 @@ router.beforeEach(async (to, from, next) => {
     // Access Token 저장
     if (accessToken) {
       authorityStore.setAccessToken(accessToken);
-      //sessionStorage.setItem('accessToken', accessToken);
 
       // 사용자 정보 요청 및 저장
       await fetchAndStoreUserInfo(accessToken);
     } else {
       throw new Error('Access Token is null');
     }
-    // URL에서 'code' 제거
-    //removeCodeFromUrl();
     // 라우팅 진행
     next();
   } catch (error) {
@@ -90,7 +87,6 @@ router.beforeEach(async (to, from, next) => {
         const { accessToken: newAccessToken } = await fetchAccessToken(refreshToken);
 
         authorityStore.setAccessToken(newAccessToken);
-        //sessionStorage.setItem('accessToken', newAccessToken);
 
         // 사용자 정보 요청 및 저장
         await fetchAndStoreUserInfo(newAccessToken);
