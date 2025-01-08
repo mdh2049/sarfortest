@@ -10,18 +10,10 @@ const menuList = inject<Menu[]>('menuList')!
 const logout = async () => {
   const authorityStore = useAuthorityStore();
   try {
-    // 액세스 토큰 가져오기
-    const accessToken = authorityStore.accessToken;
-    if (!accessToken) {
-      throw new Error('Access Token is not available');
-    }
     // 백엔드에서 세션 종료 요청
     const response = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/logout`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
+      credentials: 'include', // 쿠키 포함 요청
     });
     if (!response.ok) {
       throw new Error('Failed to log out from server');

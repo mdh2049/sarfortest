@@ -36,16 +36,17 @@ const router = createRouter({
 })
 
 // 라우터 가드 설정
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, from, next) => {debugger
   const authorityStore = useAuthorityStore();
 
   try {
-    // Pinia에 Access Token 확인
-    let accessToken = authorityStore.accessToken || sessionStorage.getItem('accessToken');
-    if (accessToken) {
+    // 서버에 토큰 유효성 확인 요청
+    const isAuthenticated = await checkAuthStatus();
+
+    if (isAuthenticated) {
       // Pinia에 사용자 정보가 없는 경우 복원
       if (!authorityStore.user) {
-        await fetchAndStoreUserInfo(accessToken);
+        await fetchAndStoreUserInfo();
       }
 
       // 라우팅 진행
@@ -63,144 +64,155 @@ router.beforeEach(async (to, from, next) => {
       return;
     }
 
-    // Access Token 요청
-    accessToken = await requestAccessToken(code);
+    // Authorization Code를 사용해 Access Token 요청
+    await requestAccessToken(code);
 
-    // Access Token 저장
-    if (accessToken) {
-      authorityStore.setAccessToken(accessToken);
+    // 사용자 정보 요청 및 저장
+    await fetchAndStoreUserInfo();
 
-      // 사용자 정보 요청 및 저장
-      await fetchAndStoreUserInfo(accessToken);
-    } else {
-      throw new Error('Access Token is null');
-    }
     // 라우팅 진행
     next();
   } catch (error) {
     console.error('Authentication failed:', error);
 
-    if (isAxiosError(error) && error.response?.status === 401) {
-      try {
-        // Refresh Token으로 Access Token 갱신
-        const refreshToken = getRefreshTokenFromCookie();
-        const { accessToken: newAccessToken } = await fetchAccessToken(refreshToken);
-
-        authorityStore.setAccessToken(newAccessToken);
-
-        // 사용자 정보 요청 및 저장
-        await fetchAndStoreUserInfo(newAccessToken);
-
-        // 라우팅 진행
-        next();
-        return;
-      } catch (refreshError) {
-        console.error('Failed to refresh Access Token:', refreshError);
+    // Refresh Token으로 Access Token 갱신 시도
+    try {
+      await refreshAccessToken();
+      if (!authorityStore.user) {
+        await fetchAndStoreUserInfo();
       }
+      // 라우팅 진행
+      next();
+    } catch (refreshError) {
+      console.error('Failed to refresh Access Token:', refreshError);
+      redirectToLogin();
     }
-
-    // 최종적으로 로그인 페이지로 리다이렉트
-    redirectToLogin();
   }
 });
-
-
-
-// Axios 에러 타입 가드
-function isAxiosError(error: unknown): error is AxiosError {
-  return (error as AxiosError).isAxiosError !== undefined;
-}
-
-// userSn 요청
-const fetchUserSn = async (accessToken: string): Promise<string> => {
+// Authorization Code를 사용해 Access Token 요청
+const requestAccessToken = async (code) => {
   try {
-    // 사용자 정보 요청
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}users/me`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+    const tokenResponse = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code,
+        redirectUri: window.location.origin,
+      }),
+      credentials: 'include', // 쿠키 포함 요청
     });
 
-    if (!response.ok) {
-      // 응답이 실패했을 경우 에러 처리
-      throw new Error('Failed to fetch user information');
+    if (!tokenResponse.ok) {
+      throw new Error('Failed to fetch Access Token');
     }
 
-    const userInfo = await response.json();
-
-    // userSn 값 반환
-    if (!userInfo.userSn) {
-      throw new Error('userSn is missing in the response');
-    }
-
-    console.log('Fetched userSn:', userInfo.userSn); // 디버깅용 로그
-    return userInfo.userSn;
-
+    const response = await tokenResponse.json();
+    console.log('Access Token response:', response);
+    // Access Token은 서버가 쿠키에 설정하므로 클라이언트에서 추가 저장 불필요
   } catch (error) {
-    console.error('Error fetching user information:', error);
-    throw error; // 에러를 다시 던져 상위에서 처리
+    console.error('Error requesting Access Token:', error);
+    throw error;
   }
 };
 
-async function fetchAndStoreUserInfo(accessToken: string) {
-  const authorityStore = useAuthorityStore();
-  const userSn = await fetchUserSn(accessToken);
+// 서버에서 인증 상태 확인
+const checkAuthStatus = async () => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/check`, {
+      method: 'GET',
+      credentials: 'include', // 쿠키 포함 요청
+    });
 
-  const userResponse = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}users/${userSn}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+    if (response.ok) {
+      const { authenticated } = await response.json();
+      return authenticated;
+    }
 
-  if (!userResponse.ok) throw new Error('Failed to fetch user information');
+    return false;
+  } catch (error) {
+    console.error('Error checking authentication status:', error);
+    throw error;
+  }
+};
 
-  const userDto = await userResponse.json();
-  authorityStore.login(userDto, accessToken);
-}
+// userSn 요청
+const fetchUserSn = async () => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}users/me`, {
+      method: 'GET',
+      credentials: 'include', // 쿠키 포함 요청
+    });
 
-// Access Token 요청
-async function requestAccessToken(code: string): Promise<string> {
-  const tokenResponse = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      code,
-      redirectUri: window.location.origin,
-    }),
-  });
+    if (!response.ok) {
+      throw new Error('Failed to fetch userSn');
+    }
 
-  if (!tokenResponse.ok) throw new Error('Failed to fetch Access Token');
+    const { userSn } = await response.json(); // userSn 값 추출
+    if (!userSn || typeof userSn !== 'number') {
+      throw new Error(`Invalid userSn: ${userSn}`);
+    }
 
-  const { accessToken } = await tokenResponse.json();
-  return accessToken;
-}
+    console.log('Fetched userSn:', userSn); // 디버깅용 로그
+    return userSn;
+  } catch (error) {
+    console.error('Error fetching userSn:', error);
+    throw error;
+  }
+};
+
+// 사용자 정보 요청 및 저장
+const fetchAndStoreUserInfo = async () => {debugger
+  try {
+    const authorityStore = useAuthorityStore();
+    const userSn = await fetchUserSn();
+
+    const userResponse = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}users/${userSn}`, {
+      method: 'GET',
+      credentials: 'include', // 쿠키 포함 요청
+    });
+
+    if (!userResponse.ok) {
+      throw new Error('Failed to fetch user information');
+    }
+
+    const userDto = await userResponse.json();
+    authorityStore.login(userDto);
+  } catch (error) {
+    console.error('Error fetching and storing user information:', error);
+    throw error;
+  }
+};
 
 // Refresh Token으로 Access Token 갱신
-async function fetchAccessToken(refreshToken: string) {
-  const response = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/refresh-token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
-  });
+const refreshAccessToken = async () => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/refresh-token`, {
+      method: 'POST',
+      credentials: 'include', // 쿠키 포함 요청
+    });
 
-  if (!response.ok) throw new Error('Failed to refresh Access Token');
-  return await response.json();
-}
+    if (!response.ok) {
+      throw new Error('Failed to refresh Access Token');
+    }
 
-// Refresh Token 가져오기
-function getRefreshTokenFromCookie() {
-  const cookies = document.cookie.split(';');
-  const refreshToken = cookies.find((cookie) => cookie.trim().startsWith('refreshToken='));
-  if (!refreshToken) throw new Error('Refresh Token not found');
-  return refreshToken.split('=')[1];
-}
+    await response.json(); // 서버가 새 토큰을 쿠키에 설정
+  } catch (error) {
+    console.error('Error refreshing Access Token:', error);
+    throw error;
+  }
+};
 
 // 로그인 페이지로 리다이렉트
-function redirectToLogin() {
-  const redirectUrl = encodeURIComponent(window.location.origin);
-  const loginUrl = `${import.meta.env.VITE_ADMIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
-  window.location.href = loginUrl;
-}
+const redirectToLogin = () => {
+  try {
+    const redirectUrl = encodeURIComponent(window.location.href);
+    const loginUrl = `${import.meta.env.VITE_ADMIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
+    window.location.href = loginUrl;
+  } catch (error) {
+    console.error('Error redirecting to login:', error);
+    throw error;
+  }
+};
 
 
 
