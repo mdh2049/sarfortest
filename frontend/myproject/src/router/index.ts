@@ -131,10 +131,10 @@ const refreshAccessToken = async () => {
   }
 };
 
-// 서버에서 인증 상태 확인
+// 토큰 유효성 검사
 const checkAuthStatus = async () => {
   try {
-    const response = await fetch(`${baseURL}auth/check`, {
+    const response = await fetch(`${baseURL}auth/validate`, {
       method: 'GET',
       credentials: 'include', // 쿠키 포함 요청
     });
