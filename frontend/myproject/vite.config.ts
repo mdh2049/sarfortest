@@ -15,6 +15,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    port: 80,
+  },
   // server: {
   //   host: '192.168.0.50', // 사용할 로컬 네트워크 IP
   //   port: 5173,           // 기본 포트

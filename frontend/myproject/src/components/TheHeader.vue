@@ -11,7 +11,7 @@ const logout = async () => {
   const authorityStore = useAuthorityStore();
   try {
     // 백엔드에서 세션 종료 요청
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_BACKEND_URL}auth/logout`, {
+    const response = await fetch(`${import.meta.env.VITE_LOGIN_BACKEND_URL}auth/logout`, {
       method: 'POST',
       credentials: 'include', // 쿠키 포함 요청
     });
@@ -22,7 +22,7 @@ const logout = async () => {
     authorityStore.logout();
     alert('로그아웃 되었습니다.');
     const redirectUrl = encodeURIComponent(window.location.origin);
-    const adminLoginUrl = `${import.meta.env.VITE_ADMIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
+    const adminLoginUrl = `${import.meta.env.VITE_LOGIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
     window.location.href = adminLoginUrl;
   } catch (error) {
     console.error('Logout failed:', error);

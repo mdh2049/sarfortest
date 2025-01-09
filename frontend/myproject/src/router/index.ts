@@ -2,7 +2,7 @@ import { useAuthorityStore } from '@/stores/authorityStore'
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 
-const baseURL = import.meta.env.VITE_ADMIN_BACKEND_URL
+const baseURL = import.meta.env.VITE_LOGIN_BACKEND_URL
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -155,7 +155,7 @@ const checkAuthStatus = async () => {
 const redirectToLogin = () => {
   try {
     const redirectUrl = encodeURIComponent(window.location.href);
-    const loginUrl = `${import.meta.env.VITE_ADMIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
+    const loginUrl = `${import.meta.env.VITE_LOGIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
     window.location.href = loginUrl;
   } catch (error) {
     console.error('Error redirecting to login:', error);

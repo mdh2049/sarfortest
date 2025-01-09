@@ -69,7 +69,7 @@ const handleTokenExpiration = (): void => {
   alert('로그인이 만료되었습니다. 다시 로그인해주세요.')
   // 관리자 서버 로그인 페이지로 리다이렉트
   const redirectUrl = encodeURIComponent(window.location.origin)
-  const adminLoginUrl = `${import.meta.env.VITE_ADMIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`
+  const adminLoginUrl = `${import.meta.env.VITE_LOGIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`
   window.location.href = adminLoginUrl
 }
 
