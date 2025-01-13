@@ -1,37 +1,52 @@
 
-import type { TokenResponseUserDto } from '@/types/token.response.user.dto copy';
-import { defineStore } from 'pinia';
+
+import type { UserAuthDto } from '@/types/Userauth.dto'
+import { defineStore } from 'pinia'
 
 export const useAuthorityStore = defineStore('auth', {
   state: () => ({
-    user: null as TokenResponseUserDto | null,
+    userAuth: null as UserAuthDto | null,
   }),
   getters: {
-    isAuthenticated: (state) => !!state.user,
-    allAuthorities: (state) => state.user?.authorities ?? [],
+    isAuthenticated: (state) => !!state.userAuth,
+    allAuthorities: (state) => state.userAuth?.allAuthrtDtoSet ?? [],
   },
   actions: {
     /**
+     * 로컬 스토리지에서 사용자 정보 복원
+     */
+    loadUserAuth() {
+      const storedUserAuth = localStorage.getItem('userAuth')
+      if (storedUserAuth) {
+        try {
+          this.userAuth = JSON.parse(storedUserAuth) as UserAuthDto
+        } catch (error) {
+          console.error('Failed to parse stored userAuth:', error)
+          this.userAuth = null
+        }
+      }
+    },
+    /**
      * 백엔드 로그인 성공 후 사용자 정보를 저장
      */
-    login(tokenResponseUserDto: TokenResponseUserDto) {
-      this.user = tokenResponseUserDto;
+    storeUserAuth(userAuth: UserAuthDto) {
+      this.userAuth = userAuth
       // 로컬 스토리지에 사용자 정보 저장
-      //localStorage.setItem('user', JSON.stringify(userDto));
+      localStorage.setItem('userAuth', JSON.stringify(userAuth))
     },
     /**
      * 사용자 정보를 갱신
      */
-    updateUser(newTokenResponseUserDto: TokenResponseUserDto) {
-      this.user = newTokenResponseUserDto;
-      //localStorage.setItem('user', JSON.stringify(newUserDto));
+    updateUser(userAuth: UserAuthDto) {
+      this.userAuth = userAuth
+      localStorage.setItem('userAuth', JSON.stringify(userAuth))
     },
     /**
      * 로그아웃 처리
      */
-    logout() {
-      this.user = null;
-      //localStorage.removeItem('user');
+    removeUserAuth() {
+      this.userAuth = null
+      localStorage.removeItem('userAuth')
     },
   },
-});
+})

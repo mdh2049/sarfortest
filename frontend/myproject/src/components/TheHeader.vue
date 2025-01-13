@@ -4,29 +4,23 @@ import HeaderMenuBlock from '@/components/menu/HeaderMenuBlock.vue'
 import { inject } from 'vue'
 import type { Menu } from '@/types/menu.ts'
 import { useAuthorityStore } from '@/stores/authorityStore'
+import { loginService } from '@/service/LoginService'
 
 
 const menuList = inject<Menu[]>('menuList')!
-const logout = async () => {
-  const authorityStore = useAuthorityStore();
+  const logout = async () => {
+  const authorityStore = useAuthorityStore()
   try {
     // 백엔드에서 세션 종료 요청
-    const response = await fetch(`${import.meta.env.VITE_LOGIN_BACKEND_URL}auth/logout`, {
-      method: 'POST',
-      credentials: 'include', // 쿠키 포함 요청
-    });
-    if (!response.ok) {
-      throw new Error('Failed to log out from server');
-    }
+    loginService.logout()
     // 클라이언트 상태 초기화
-    authorityStore.logout();
-    alert('로그아웃 되었습니다.');
-    const redirectUrl = encodeURIComponent(window.location.origin);
-    const adminLoginUrl = `${import.meta.env.VITE_LOGIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
-    window.location.href = adminLoginUrl;
+    authorityStore.removeUserAuth()
+    alert('로그아웃 되었습니다.')
+    // 로그인 페이지로 리다이렉트트
+    loginService.redirectToLogin()
   } catch (error) {
-    console.error('Logout failed:', error);
-    alert('로그아웃 중 문제가 발생했습니다.');
+    console.error('Logout failed:', error)
+    alert('로그아웃 중 문제가 발생했습니다.')
   }
 }
 

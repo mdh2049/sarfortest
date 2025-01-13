@@ -1,8 +1,10 @@
 import { useAuthorityStore } from '@/stores/authorityStore'
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import type { AuthorityDto } from '@/types/authority.dto'
+import { loginService } from '@/service/LoginService'
+import { userService } from '@/service/UserService'
 
-const baseURL = import.meta.env.VITE_LOGIN_BACKEND_URL
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -35,132 +37,75 @@ const router = createRouter({
   ],
 })
 
-// 라우터 가드 설정
+//라우터 가드 설정
 router.beforeEach(async (to, from, next) => {
-  const authorityStore = useAuthorityStore();
+  const authorityStore = useAuthorityStore()
+
   try {
-    // 서버에 토큰 유효성 확인 요청
-    const tokenResponseUserDto = await checkAuthStatus();
+    // 토큰 유효성 검사
+    const responseValidate = await loginService.validateAuth()
+    const userId = responseValidate.userId
+    const isAuthenticated = responseValidate.isAuthenticated
+    if (isAuthenticated) {
+      // 로컬 스토리지에서 사용자 권한 정보 로드
+      authorityStore.loadUserAuth()
 
-    if (tokenResponseUserDto) {
-      // Pinia에 사용자 정보가 없는 경우 복원
-      if (!authorityStore.user) {
-        authorityStore.login(tokenResponseUserDto);
+      // 권한 정보가 없는 경우 서버에서 가져오기
+      if (!authorityStore.isAuthenticated && userId) {
+        const userAuthDto = await userService.getUserAuthById(userId)
+        authorityStore.storeUserAuth(userAuthDto)
+
+        if (!checkAdminAuthority(authorityStore)) {
+          alert('관리자 권한이 없습니다. 로그인 페이지로 이동합니다.')
+          loginService.logout()
+          authorityStore.removeUserAuth() // 권한 초기화
+          loginService.redirectToLogin()
+          return
+        }
       }
+      next()
 
-      // 라우팅 진행
-      next();
-      return;
+      return
     }
 
-    // URL에서 Authorization Code 추출 - code grant flow
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
+    // Access Token과 Refresh Token이 없는 경우 Authorization Code 확인
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
 
     if (!code) {
-      // Authorization Code가 없는 경우 로그인 페이지로 리다이렉트
-      redirectToLogin();
-      return;
+      loginService.redirectToLogin() // Authorization Code도 없는 경우 로그인 페이지로 리다이렉트
+      return
     }
 
-    // Authorization Code를 사용해 Access Token 요청 - 토큰 생성 후후 userSn을 리턴
-    const newTokenResponseUserDto = await requestAccessToken(code);
-    authorityStore.login(newTokenResponseUserDto);
+    // Authorization Code를 사용해 토큰 발급 및 권한 저장
+    const responseToken = await loginService.requestAccessToken(code)
+    const userIdFromToken = responseToken.userId
+    const userAuthDto = await userService.getUserAuthById(userIdFromToken)
+    authorityStore.storeUserAuth(userAuthDto)
 
-    // 라우팅 진행
-    next();
-  } catch (error) {
-    console.error('Authentication failed:', error);
-
-    // Refresh Token으로 Access Token 갱신 시도
-    try {
-      const renewTokenResponseUserDto = await refreshAccessToken();
-      if (!authorityStore.user) {
-        authorityStore.login(renewTokenResponseUserDto);
-      }
-      // 라우팅 진행
-      next();
-    } catch (refreshError) {
-      console.error('Failed to refresh Access Token:', refreshError);
-      redirectToLogin();
-    }
-  }
-});
-// Authorization Code를 사용해 Access Token 요청
-const requestAccessToken = async (code: string) => {
-  try {
-    const response = await fetch(`${baseURL}auth/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code,
-        redirectUri: window.location.origin,
-      }),
-      credentials: 'include', // 쿠키 포함 요청
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch Access Token');
+    if (!checkAdminAuthority(authorityStore)) {
+      alert('관리자 권한이 없습니다. 로그인 페이지로 이동합니다.')
+      await fetch(`${import.meta.env.VITE_LOGIN_BACKEND_URL}auth/logout`, {
+        method: 'POST',
+        credentials: 'include', // 쿠키 포함 요청
+      })
+      authorityStore.removeUserAuth() // 권한 초기화
+      loginService.redirectToLogin()
+      return
     }
 
-    const tokenResponseUserDto = await response.json();
-    return tokenResponseUserDto;
+    next('/') // 인증 후 기본 경로로 리다이렉트
   } catch (error) {
-    console.error('Error requesting Access Token:', error);
-    throw error;
+    console.error('Authentication failed:', error)
+    authorityStore.removeUserAuth() // 권한 초기화
+    loginService.redirectToLogin()
   }
-};
+})
 
-// Refresh Token으로 Access Token 갱신
-const refreshAccessToken = async () => {
-  try {
-    const response = await fetch(`${baseURL}auth/refresh-token`, {
-      method: 'POST',
-      credentials: 'include', // 쿠키 포함 요청
-    });
+//관리자 권한 체크
+const checkAdminAuthority = (authorityStore: ReturnType<typeof useAuthorityStore>): boolean => {
+  return authorityStore.allAuthorities.some((authority: AuthorityDto) => authority.authrtNm === 'ROLE_ADMIN')
+}
 
-    if (!response.ok) {
-      throw new Error('Failed to refresh Access Token');
-    }
-
-    const tokenResponseUserDto = await response.json();
-    return tokenResponseUserDto;
-  } catch (error) {
-    console.error('Error refreshing Access Token:', error);
-    throw error;
-  }
-};
-
-// 토큰 유효성 검사
-const checkAuthStatus = async () => {
-  try {
-    const response = await fetch(`${baseURL}auth/validate`, {
-      method: 'GET',
-      credentials: 'include', // 쿠키 포함 요청
-    });
-
-    if (response.ok) {
-      const  tokenResponseUserDto  = await response.json();
-      return tokenResponseUserDto;
-    }
-
-    return false;
-  } catch (error) {
-    console.error('Error checking authentication status:', error);
-    throw error;
-  }
-};
-
-// 로그인 페이지로 리다이렉트
-const redirectToLogin = () => {
-  try {
-    const redirectUrl = encodeURIComponent(window.location.href);
-    const loginUrl = `${import.meta.env.VITE_LOGIN_FRONT_URL}login-user?redirect_uri=${redirectUrl}`;
-    window.location.href = loginUrl;
-  } catch (error) {
-    console.error('Error redirecting to login:', error);
-    throw error;
-  }
-};
 
 export default router
